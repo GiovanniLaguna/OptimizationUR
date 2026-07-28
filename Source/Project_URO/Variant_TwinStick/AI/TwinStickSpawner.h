@@ -8,6 +8,7 @@
 #include "TwinStickSpawner.generated.h"
 
 class ARecastNavMesh;
+class UActorPool;
 
 /**
  *  A simple NPC spawner for a Twin Stick Shooter game
@@ -54,6 +55,10 @@ protected:
 
 	/** Pointer to the recast nav mesh actor, used to provide NPC spawn locations */
 	TObjectPtr<ARecastNavMesh> NavData;
+
+	/** NPC actor pool component */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	UActorPool* NPCPool;
 
 public:	
 

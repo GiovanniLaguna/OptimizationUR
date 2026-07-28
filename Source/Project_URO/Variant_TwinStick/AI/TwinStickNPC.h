@@ -4,10 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Pooling/PoolableActor.h"
 #include "TwinStickNPC.generated.h"
 
 class ATwinStickPickup;
 class ATwinStickNPCDestruction;
+class UActorPool;
 
 /**
  *  A simple enemy NPC for a Twin Stick Shooter game
@@ -15,7 +17,7 @@ class ATwinStickNPCDestruction;
  *  Awards points and randomly spawns pickups on death
  */
 UCLASS(abstract)
-class ATwinStickNPC : public ACharacter
+class ATwinStickNPC : public ACharacter, public IPoolableActor
 {
 	GENERATED_BODY()
 
@@ -78,4 +80,16 @@ protected:
 
 	/** Called from timer to complete the destruction process for this NPC */
 	void DeferredDestroy();
+
+public:
+	/** The pool that owns this NPC */
+	UPROPERTY(Transient, BlueprintReadWrite, Category = "Pooling")
+	UActorPool* OwningPool;
+
+	/** If true, the NPC is currently active in the world (not in the pool) */
+	bool bActiveInWorld = false;
+
+	// IPoolableActor interface implementation
+	virtual void OnActivatedFromPool_Implementation() override;
+	virtual void OnReturnedToPool_Implementation() override;
 };

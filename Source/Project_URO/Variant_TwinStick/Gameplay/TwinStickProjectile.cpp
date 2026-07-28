@@ -12,7 +12,7 @@
 
 ATwinStickProjectile::ATwinStickProjectile()
 {
- 	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 	// set InitialLifeSpan to 0 so the actor is not destroyed on spawn when pooled
 	InitialLifeSpan = 0.0f;

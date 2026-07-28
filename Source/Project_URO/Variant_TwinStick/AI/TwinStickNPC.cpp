@@ -11,6 +11,9 @@
 #include "Engine/World.h"
 #include "TwinStickNPCDestruction.h"
 #include "TimerManager.h"
+#include "AIController.h"
+#include "BrainComponent.h"
+#include "Pooling/ActorPool.h"
 
 ATwinStickNPC::ATwinStickNPC()
 {
@@ -43,7 +46,8 @@ void ATwinStickNPC::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// increment the NPC counter so we can cap spawning if necessary
+	// Mark active and increment counter
+	bActiveInWorld = true;
 	if (ATwinStickGameMode* GM = Cast<ATwinStickGameMode>(GetWorld()->GetAuthGameMode()))
 	{
 		GM->IncreaseNPCs();
@@ -61,10 +65,14 @@ void ATwinStickNPC::EndPlay(EEndPlayReason::Type EndPlayReason)
 
 void ATwinStickNPC::Destroyed()
 {
-	// decrease the NPC counter so we can cap spawning if necessary
-	if (ATwinStickGameMode* GM = Cast<ATwinStickGameMode>(GetWorld()->GetAuthGameMode()))
+	// decrease the NPC counter so we can cap spawning if necessary if we were active
+	if (bActiveInWorld)
 	{
-		GM->DecreaseNPCs();
+		bActiveInWorld = false;
+		if (ATwinStickGameMode* GM = Cast<ATwinStickGameMode>(GetWorld()->GetAuthGameMode()))
+		{
+			GM->DecreaseNPCs();
+		}
 	}
 
 	Super::Destroyed();
@@ -121,6 +129,69 @@ void ATwinStickNPC::ProjectileImpact(const FVector& ForwardVector)
 
 void ATwinStickNPC::DeferredDestroy()
 {
-	// destroy this actor
-	Destroy();
+	if (OwningPool)
+	{
+		OwningPool->ReturnActorToPool(this);
+	}
+	else
+	{
+		Destroy();
+	}
+}
+
+void ATwinStickNPC::OnActivatedFromPool_Implementation()
+{
+	// 1. Reset state
+	bHit = false;
+
+	// 2. Reactivate movement component
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->Activate(true);
+		GetCharacterMovement()->Velocity = FVector::ZeroVector;
+	}
+
+	// 3. Restart AI logic
+	if (AAIController* AIC = Cast<AAIController>(GetController()))
+	{
+		if (UBrainComponent* BrainComp = AIC->GetBrainComponent())
+		{
+			BrainComp->RestartLogic();
+		}
+	}
+
+	// 4. Update active state and increment active count
+	if (!bActiveInWorld)
+	{
+		bActiveInWorld = true;
+		if (ATwinStickGameMode* GM = Cast<ATwinStickGameMode>(GetWorld()->GetAuthGameMode()))
+		{
+			GM->IncreaseNPCs();
+		}
+	}
+}
+
+void ATwinStickNPC::OnReturnedToPool_Implementation()
+{
+	// 1. Clear destruction timer
+	GetWorld()->GetTimerManager().ClearTimer(DestructionTimer);
+
+	// 2. Stop AI Controller logic
+	if (AAIController* AIC = Cast<AAIController>(GetController()))
+	{
+		if (UBrainComponent* BrainComp = AIC->GetBrainComponent())
+		{
+			BrainComp->StopLogic(TEXT("Returned to pool"));
+		}
+	}
+
+	// 3. Update active state and decrement active count
+	if (bActiveInWorld)
+	{
+		bActiveInWorld = false;
+		if (ATwinStickGameMode* GM = Cast<ATwinStickGameMode>(GetWorld()->GetAuthGameMode()))
+		{
+			GM->DecreaseNPCs();
+		}
+	}
 }

@@ -9,16 +9,24 @@
 #include "Kismet/GameplayStatics.h"
 #include "TwinStickNPC.h"
 #include "TwinStickGameMode.h"
+#include "Pooling/ActorPool.h"
 
 ATwinStickSpawner::ATwinStickSpawner()
 {
- 	PrimaryActorTick.bCanEverTick = true;
+ 	PrimaryActorTick.bCanEverTick = false;
 
+	NPCPool = CreateDefaultSubobject<UActorPool>(TEXT("NPCPool"));
+	NPCPool->defaultSize = 15;
 }
 
 void ATwinStickSpawner::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	if (NPCPool && NPCClass)
+	{
+		NPCPool->actorTemplate = NPCClass;
+	}
 	
 	// find the recast navmesh actor on the level
 	TArray<AActor*> ActorList;
@@ -74,8 +82,12 @@ void ATwinStickSpawner::SpawnNPC()
 	{
 		SpawnTransform.SetLocation(SpawnLoc);
 
-		// spawn the NPC
-		ATwinStickNPC* NPC = GetWorld()->SpawnActor<ATwinStickNPC>(NPCClass, SpawnTransform);
+		// spawn the NPC from pool
+		AActor* PooledActor = NPCPool->GetActorFromPool(SpawnLoc, SpawnTransform.Rotator());
+		if (ATwinStickNPC* NPC = Cast<ATwinStickNPC>(PooledActor))
+		{
+			NPC->OwningPool = NPCPool;
+		}
 	}
 
 	// increase the spawn counter
