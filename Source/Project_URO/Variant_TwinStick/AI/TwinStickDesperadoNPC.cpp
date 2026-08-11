@@ -329,3 +329,45 @@ void ATwinStickDesperadoNPC::ApplyLassoStun(float Duration)
 	// Call parent class to halt movement and pause AI brain
 	Super::ApplyLassoStun(Duration);
 }
+
+void ATwinStickDesperadoNPC::OnActivatedFromPool_Implementation()
+{
+	Super::OnActivatedFromPool_Implementation();
+
+	// Reset Desperado-specific states
+	CurrentState = EDesperadoState::Idle;
+	bSniperOnCooldown = false;
+	bDynamiteOnCooldown = false;
+	bDodgeOnCooldown = false;
+	CurrentAimTime = 0.0f;
+
+	// TargetPlayer can be cached again
+	TargetPlayer = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
+
+	// Ensure tick is disabled initially (only enabled when aiming)
+	SetActorTickEnabled(false);
+	BP_SetLaserActive(false);
+
+	// Start looping AI decisions check
+	GetWorld()->GetTimerManager().SetTimer(AICheckTimerHandle, this, &ATwinStickDesperadoNPC::ProcessAIStateCheck, 0.2f, true);
+}
+
+void ATwinStickDesperadoNPC::OnReturnedToPool_Implementation()
+{
+	// Clear all Desperado-specific timers
+	GetWorld()->GetTimerManager().ClearTimer(AICheckTimerHandle);
+	GetWorld()->GetTimerManager().ClearTimer(StateTimerHandle);
+	GetWorld()->GetTimerManager().ClearTimer(SniperCooldownTimerHandle);
+	GetWorld()->GetTimerManager().ClearTimer(DynamiteCooldownTimerHandle);
+	GetWorld()->GetTimerManager().ClearTimer(DodgeCooldownTimerHandle);
+
+	// Deactivate any active aiming visual states
+	SetActorTickEnabled(false);
+	BP_SetLaserActive(false);
+
+	// Reset state
+	CurrentState = EDesperadoState::Idle;
+
+	// Call parent implementation last
+	Super::OnReturnedToPool_Implementation();
+}

@@ -35,6 +35,10 @@ public:
 	/** Constructor */
 	ATwinStickDesperadoNPC();
 
+	// IPoolableActor interface implementation overrides
+	virtual void OnActivatedFromPool_Implementation() override;
+	virtual void OnReturnedToPool_Implementation() override;
+
 protected:
 	/** Gameplay initialization */
 	virtual void BeginPlay() override;

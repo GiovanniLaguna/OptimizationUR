@@ -64,13 +64,13 @@ ATwinStickCharacter::ATwinStickCharacter()
 
 void ATwinStickCharacter::BeginPlay()
 {
-	Super::BeginPlay();
-	
 	// Initialize projectile pool template
 	if (ProjectilePool && ProjectileClass)
 	{
 		ProjectilePool->actorTemplate = ProjectileClass;
 	}
+
+	Super::BeginPlay();
 
 	// update the items count
 	UpdateItems();
