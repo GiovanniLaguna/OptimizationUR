@@ -9,6 +9,8 @@
 #include "Pooling/ActorPool.h"
 #include "TimerManager.h"
 #include "Engine/World.h"
+#include "TwinStickGameMode.h"
+#include "Pooling/PooledDecalActor.h"
 
 ATwinStickProjectile::ATwinStickProjectile()
 {
@@ -50,6 +52,33 @@ void ATwinStickProjectile::NotifyHit(class UPrimitiveComponent* MyComp, AActor* 
 {
 	Super::NotifyHit(MyComp, Other, OtherComp, bSelfMoved, HitLocation, HitNormal, NormalImpulse, Hit);
 
+	if (!DecalMaterial)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TwinStickProjectile: DecalMaterial no está asignado en el Blueprint."));
+	}
+
+	// Spawn impact decal from pool if hitting a non-character solid surface
+	if (!bDecalSpawned && DecalMaterial && Other && !Other->IsA(ATwinStickNPC::StaticClass()))
+	{
+		if (ATwinStickGameMode* GM = Cast<ATwinStickGameMode>(GetWorld()->GetAuthGameMode()))
+		{
+			if (UActorPool* DecalPool = GM->GetDecalPool())
+			{
+				bDecalSpawned = true;
+				// Orient projection INTO the wall surface using (-HitNormal)
+				FRotator DecalRotation = (-HitNormal).Rotation();
+				DecalRotation.Roll = FMath::RandRange(0.0f, 360.0f);
+
+				AActor* PooledActor = DecalPool->GetActorFromPool(HitLocation, DecalRotation);
+				if (APooledDecalActor* DecalActor = Cast<APooledDecalActor>(PooledActor))
+				{
+					DecalActor->OwningPool = DecalPool;
+					DecalActor->InitDecal(DecalMaterial, DecalSize, DecalLifeSpan);
+				}
+			}
+		}
+	}
+
 	// have we hit a NPC?
 	if (ATwinStickNPC* NPC = Cast<ATwinStickNPC>(Other))
 	{
@@ -63,12 +92,42 @@ void ATwinStickProjectile::NotifyHit(class UPrimitiveComponent* MyComp, AActor* 
 
 void ATwinStickProjectile::OnProjectileStop(const FHitResult& ImpactResult)
 {
+	if (!DecalMaterial)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TwinStickProjectile: DecalMaterial no está asignado en el Blueprint para OnProjectileStop."));
+	}
+
+	// Spawn impact decal from pool if hitting a surface
+	if (!bDecalSpawned && DecalMaterial)
+	{
+		if (ATwinStickGameMode* GM = Cast<ATwinStickGameMode>(GetWorld()->GetAuthGameMode()))
+		{
+			if (UActorPool* DecalPool = GM->GetDecalPool())
+			{
+				bDecalSpawned = true;
+				// Orient projection INTO the wall surface using (-ImpactNormal)
+				FRotator DecalRotation = (-ImpactResult.ImpactNormal).Rotation();
+				DecalRotation.Roll = FMath::RandRange(0.0f, 360.0f);
+
+				AActor* PooledActor = DecalPool->GetActorFromPool(ImpactResult.ImpactPoint, DecalRotation);
+				if (APooledDecalActor* DecalActor = Cast<APooledDecalActor>(PooledActor))
+				{
+					DecalActor->OwningPool = DecalPool;
+					DecalActor->InitDecal(DecalMaterial, DecalSize, DecalLifeSpan);
+				}
+			}
+		}
+	}
+
 	// return to pool instead of destroying
 	ReturnToPool();
 }
 
 void ATwinStickProjectile::OnActivatedFromPool_Implementation()
 {
+	// Reset decal spawn flag
+	bDecalSpawned = false;
+
 	// Reset/activate projectile movement
 	if (ProjectileMovement)
 	{
