@@ -25,6 +25,8 @@ ATwinStickNPC::ATwinStickNPC()
 	// configure the inherited components
 	GetCapsuleComponent()->SetCapsuleRadius(45.0f);
 	GetCapsuleComponent()->SetNotifyRigidBodyCollision(true);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Block);
 
 	GetMesh()->SetCollisionProfileName(FName("NoCollision"));
 

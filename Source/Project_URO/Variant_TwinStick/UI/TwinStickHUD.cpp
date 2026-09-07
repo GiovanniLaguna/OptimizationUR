@@ -4,6 +4,7 @@
 #include "TwinStickHUD.h"
 #include "TwinStickUI.h"
 #include "Blueprint/UserWidget.h"
+#include "Kismet/GameplayStatics.h"
 
 ATwinStickHUD::ATwinStickHUD()
 {
@@ -14,6 +15,12 @@ ATwinStickHUD::ATwinStickHUD()
 void ATwinStickHUD::BeginPlay()
 {
 	Super::BeginPlay();
+
+	FString CurrentLevelName = UGameplayStatics::GetCurrentLevelName(this);
+	if (CurrentLevelName.Contains(TEXT("Menu"), ESearchCase::IgnoreCase))
+	{
+		return;
+	}
 
 	// Ensure we have a player controller and a valid widget class assigned
 	APlayerController* PC = GetOwningPlayerController();

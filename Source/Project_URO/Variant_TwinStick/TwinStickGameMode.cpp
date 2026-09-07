@@ -50,7 +50,10 @@ void ATwinStickGameMode::ItemUsed(int32 Value)
 	}
 
 	// update the UI
-	UIWidget->UpdateItems(Value);
+	if (UIWidget)
+	{
+		UIWidget->UpdateItems(Value);
+	}
 }
 
 void ATwinStickGameMode::ScoreUpdate(int32 Value)
@@ -59,7 +62,10 @@ void ATwinStickGameMode::ScoreUpdate(int32 Value)
 	Score += Value * Combo;
 
 	// update the UI
-	UIWidget->UpdateScore(Score);
+	if (UIWidget)
+	{
+		UIWidget->UpdateScore(Score);
+	}
 
 	// update the combo multiplier
 	ComboUpdate();
@@ -70,6 +76,12 @@ void ATwinStickGameMode::CreateUI()
 	// avoid creating the UI multiple times
 	if(UIWidget)
 		return;
+
+	FString CurrentLevelName = UGameplayStatics::GetCurrentLevelName(this);
+	if (CurrentLevelName.Contains(TEXT("Menu"), ESearchCase::IgnoreCase))
+	{
+		return;
+	}
 
 	APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 	if (PC)

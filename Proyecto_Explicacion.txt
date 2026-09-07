@@ -1,0 +1,126 @@
+================================================================================
+EXPLICACION DEL PROYECTO: PROJECT_URO Y SUS IMPLEMENTACIONES
+================================================================================
+
+Este proyecto de Unreal Engine (Project_URO) implementa dos variantes de juego
+diferentes basadas en una arquitectura optimizada que utiliza un sistema de
+Object Pooling personalizado en C++.
+
+--------------------------------------------------------------------------------
+1. SISTEMA DE OBJECT POOLING (Pooling)
+--------------------------------------------------------------------------------
+Diseñado para optimizar el rendimiento al evitar la creacion (Spawn) y destruccion
+repetida de actores dinamicos (proyectiles, calcomanias/decals, enemigos), lo cual
+reduce significativamente el overhead de la recoleccion de basura (Garbage Collection)
+y CPU.
+
+* PoolableActor.h:
+  Define la interfaz IPoolableActor con los eventos OnActivatedFromPool() y
+  OnReturnedToPool(). Los actores que implementan esta interfaz pueden responder
+  cuando son activados o desactivados.
+  (Ruta: Source/Project_URO/Pooling/PoolableActor.h)
+
+* ActorPool.h & ActorPool.cpp:
+  Componente de Actor que gestiona un pool para un tipo especifico de actor
+  (actorTemplate). Pre-instancia actores en BeginPlay y los almacena inactivos.
+  Si se solicitan mas de los disponibles, amplia el pool dinamicamente.
+  (Ruta: Source/Project_URO/Pooling/ActorPool.h)
+
+* ActorUtilities.h & ActorUtilities.cpp:
+  Contiene la funcion estatica ToggleActorHidden(AActor*, bool bHidden).
+  Esta funcion:
+  1. Oculta el actor en el juego, activa/desactiva sus colisiones y su Tick.
+  2. Detiene componentes de movimiento (UMovementComponent), fisicas
+     (UPrimitiveComponent) y sistemas de particulas (Cascada y Niagara).
+  3. Invoca la interfaz IPoolableActor para notificar al actor.
+  (Ruta: Source/Project_URO/Pooling/ActorUtilities.h)
+
+* PooledDecalActor.h & PooledDecalActor.cpp:
+  Actor de calcomania (decal) reutilizable. Al activarse, inicia un desvanecimiento
+  progresivo (SetFadeOut) y usa un temporizador (Timer) para regresar al pool al
+  expirar su tiempo de vida (LifeSpan).
+  (Ruta: Source/Project_URO/Pooling/PooledDecalActor.h)
+
+--------------------------------------------------------------------------------
+2. VARIANTE 1: TWIN-STICK SHOOTER (Variant_TwinStick)
+--------------------------------------------------------------------------------
+Un juego de disparos en tercera persona con mecanicas avanzadas de combate,
+oleadas de enemigos, combos y armas mejoradas.
+
+* Personaje Principal (TwinStickCharacter.h/.cpp):
+  - Movimiento e Input: Orientacion automatica hacia donde apunta el cursor/mando.
+  - Sistema de Armas (EWeaponMode):
+    * Standard / MachineGun: Disparo basico o rapido que obtiene proyectiles
+      desde un ProjectilePool.
+    * Shotgun: Disparo triple en abanico (tres proyectiles del pool a la vez).
+    * Laser: Disparo instantaneo continuo usando Line Trace (Raycast). Genera
+      calcomanias de impacto optimizadas usando el pool de calcomanias.
+  - Esquiva/Dash: Impulso de movimiento que otorga invulnerabilidad temporal
+    desactivando el dano.
+  - Lazo (Lasso): Disparo de cuerda que aturde a los enemigos impactados
+    deteniendo su movimiento y pausando su IA.
+  (Ruta: Source/Project_URO/Variant_TwinStick/TwinStickCharacter.h)
+
+* Modo de Juego y Puntuacion (TwinStickGameMode.h/.cpp):
+  - Gestiona el Multiplicador de Combo (max. 4x), el cual aumenta tras realizar
+    bajas sucesivas y decae progresivamente si pasa cierto tiempo de enfriamiento
+    (ComboCooldown).
+  - Controla el limite maximo de enemigos activos simultaneos en el mapa
+    (NPCCap = 20).
+  - Administra el DecalPool global de impactos.
+  (Ruta: Source/Project_URO/Variant_TwinStick/TwinStickGameMode.h)
+
+* Inteligencia Artificial (IA) y Enemigos (AI/TwinStickNPC.h/.cpp):
+  - Enemigo base integrado con el Object Pooling. Al recibir un disparo:
+    * Detiene su IA, genera una probabilidad de soltar un pickup, e invoca un
+      actor de destruccion (TwinStickNPCDestruction) para simular la muerte
+      (fisica tipo ragdoll).
+    * Se oculta de inmediato y programa su regreso al pool.
+    * Gestiona la pausa/reanudacion de su IA cuando es alcanzado por el Lazo.
+  (Ruta: Source/Project_URO/Variant_TwinStick/AI/TwinStickNPC.h)
+
+* Enemigo Avanzado Desperado (AI/TwinStickDesperadoNPC.h/.cpp):
+  - Enemigo especial avanzado tipo "Desperado" con maquina de estados basada en
+    temporizadores (para evitar procesar el Tick innecesariamente):
+    * Aiming: Apunta al jugador con una mira laser que cuenta con lag de
+      interpolacion (permitiendo al jugador esquivarla).
+    * Firing: Dispara un proyectil de francotirador a gran velocidad.
+    * Bombas/Dinamita: Lanza dinamita calculando trayectorias parabolicas mediante
+      SuggestProjectileVelocity.
+    * Dodge Roll: Rueda lateralmente de forma automatica para esquivar
+      proyectiles entrantes, obteniendo inmunidad momentanea.
+  (Ruta: Source/Project_URO/Variant_TwinStick/AI/TwinStickDesperadoNPC.h)
+
+* Generador de Enemigos (AI/TwinStickSpawner.h/.cpp):
+  - Generador de oleadas de enemigos. Encuentra puntos transitables aleatorios
+    alrededor de su ubicacion mediante el NavMesh (UNavigationSystemV1) y activa
+    enemigos tomandolos de su NPCPool.
+  (Ruta: Source/Project_URO/Variant_TwinStick/AI/TwinStickSpawner.h)
+
+--------------------------------------------------------------------------------
+3. VARIANTE 2: ESTRATEGIA REAL-TIME (Variant_Strategy)
+--------------------------------------------------------------------------------
+Un modo de estrategia top-down en el que el jugador no controla un avatar
+directamente, sino que comanda indirectamente a un grupo de unidades.
+
+* StrategyPawn.h/.cpp:
+  Representa la camara aerea del jugador. Carece de representacion fisica y
+  permite desplazamientos fluidos y zoom.
+  (Ruta: Source/Project_URO/Variant_Strategy/StrategyPawn.h)
+
+* StrategyPlayerController.h/.cpp:
+  Controla las interacciones de estrategia:
+  - Seleccion: Permite seleccionar unidades individuales mediante clics o dibujar
+    una caja de seleccion arrastrando el raton (Drag Selection Box).
+  - Orden de movimiento: Ordena a las unidades seleccionadas desplazarse hacia las
+    coordenadas del cursor proyectadas en el mundo tridimensional.
+  - Soporte Tactil/Movil: Integra soporte para pellizcos de zoom (pinch-to-zoom),
+    dobles toques (double tap para seleccionar a todos) y arrastres.
+  (Ruta: Source/Project_URO/Variant_Strategy/StrategyPlayerController.h)
+
+* StrategyUnit.h/.cpp:
+  Unidad base controlada por la IA de navegacion (MoveToLocation). Responde a los
+  eventos de seleccion, parada inmediata e interaccion directa con otros
+  actores u otras unidades.
+  (Ruta: Source/Project_URO/Variant_Strategy/StrategyUnit.h)
+================================================================================

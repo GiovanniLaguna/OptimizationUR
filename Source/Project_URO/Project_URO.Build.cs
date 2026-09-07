@@ -32,7 +32,11 @@ public class Project_URO : ModuleRules
 			"Project_URO/Variant_TwinStick",
 			"Project_URO/Variant_TwinStick/AI",
 			"Project_URO/Variant_TwinStick/Gameplay",
-			"Project_URO/Variant_TwinStick/UI"
+			"Project_URO/Variant_TwinStick/UI",
+			"Project_URO/Variant_WildGuns",
+			"Project_URO/Variant_WildGuns/AI",
+			"Project_URO/Variant_WildGuns/Gameplay",
+			"Project_URO/Variant_WildGuns/UI"
 		});
 
 		// Uncomment if you are using Slate UI
