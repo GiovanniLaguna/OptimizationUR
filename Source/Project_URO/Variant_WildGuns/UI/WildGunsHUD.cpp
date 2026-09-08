@@ -124,6 +124,58 @@ void AWildGunsHUD::DrawHUD()
 		DrawRect(FLinearColor(1.0f, 0.2f, 0.2f, 1.0f), ReticlePos.X - 2.0f, ReticlePos.Y - 2.0f, 4.0f, 4.0f);
 	}
 
+	// 3. Guía de Botones y Controles en la Interfaz (Arcade HUD)
+	if (bShowControlsGuide && (!PC || !PC->IsGamePaused()) && (!GM || GM->GetMatchState() == EWildGunsMatchState::Playing))
+	{
+		const float GuideH = 34.0f;
+		const float GuideW = FMath::Min(1060.0f, ScreenW - 40.0f);
+		const float GuideX = (ScreenW - GuideW) * 0.5f;
+		const float GuideY = ScreenH - GuideH - 12.0f;
+
+		// Fondo de barra semitransparente estilo arcade western con bordes dorados
+		DrawRect(FLinearColor(0.03f, 0.04f, 0.06f, 0.88f), GuideX, GuideY, GuideW, GuideH);
+		DrawRect(FLinearColor(0.88f, 0.70f, 0.20f, 0.85f), GuideX, GuideY, GuideW, 1.5f);
+		DrawRect(FLinearColor(0.88f, 0.70f, 0.20f, 0.85f), GuideX, GuideY + GuideH - 1.5f, GuideW, 1.5f);
+		DrawRect(FLinearColor(0.88f, 0.70f, 0.20f, 0.85f), GuideX, GuideY, 1.5f, GuideH);
+		DrawRect(FLinearColor(0.88f, 0.70f, 0.20f, 0.85f), GuideX + GuideW - 1.5f, GuideY, 1.5f, GuideH);
+
+		struct FButtonPrompt
+		{
+			FString Key;
+			FString Action;
+		};
+
+		const TArray<FButtonPrompt> Prompts = {
+			{ TEXT("[A / D]"), TEXT("MOVERSE") },
+			{ TEXT("[ESPACIO]"), TEXT("SALTO x2") },
+			{ TEXT("[RATON]"), TEXT("APUNTAR") },
+			{ TEXT("[CLIC IZQ]"), TEXT("DISPARAR") },
+			{ TEXT("[CLIC DER / F]"), TEXT("MELEE") },
+			{ TEXT("[ESC / P]"), TEXT("PAUSA") }
+		};
+
+		const float Spacing = (GuideW - 20.0f) / Prompts.Num();
+
+		for (int32 i = 0; i < Prompts.Num(); ++i)
+		{
+			const FButtonPrompt& P = Prompts[i];
+			const float SlotX = GuideX + 10.0f + (i * Spacing);
+
+			// Tecla en dorado / ámbar
+			DrawText(P.Key, FLinearColor(1.0f, 0.86f, 0.22f, 1.0f), SlotX + 8.0f, GuideY + 9.0f, MedFont, 0.82f, false);
+
+			// Acción en blanco nítido
+			const float KeyLen = P.Key.Len() * 8.0f;
+			DrawText(P.Action, FLinearColor(0.95f, 0.95f, 0.95f, 0.95f), SlotX + 8.0f + KeyLen + 6.0f, GuideY + 9.0f, MedFont, 0.82f, false);
+
+			// Divisor vertical
+			if (i < Prompts.Num() - 1)
+			{
+				DrawLine(SlotX + Spacing - 4.0f, GuideY + 6.0f, SlotX + Spacing - 4.0f, GuideY + GuideH - 6.0f, FLinearColor(0.5f, 0.45f, 0.25f, 0.5f), 1.0f);
+			}
+		}
+	}
+
 	// Obtener posición del ratón para efectos de hover
 	float MouseX = 0.0f, MouseY = 0.0f;
 	if (PC)
@@ -132,13 +184,13 @@ void AWildGunsHUD::DrawHUD()
 	}
 	const FVector2D MousePos(MouseX, MouseY);
 
-	// 3. Pantalla de Pausa
+	// 4. Pantalla de Pausa
 	if (PC && PC->IsGamePaused())
 	{
 		DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, 0.68f), 0.0f, 0.0f, ScreenW, ScreenH);
 
 		const float BoxW = 460.0f;
-		const float BoxH = 290.0f;
+		const float BoxH = 320.0f;
 		const float BoxX = (ScreenW - BoxW) * 0.5f;
 		const float BoxY = (ScreenH - BoxH) * 0.5f;
 
@@ -172,6 +224,9 @@ void AWildGunsHUD::DrawHUD()
 		DrawRect(bHoverMainMenu ? FLinearColor(0.58f, 0.22f, 0.22f, 1.0f) : FLinearColor(0.38f, 0.14f, 0.14f, 0.95f), BtnX, BoxY + 196.0f, BtnW, BtnH);
 		DrawText(TEXT("[ MAIN MENU ]  (M)"), bHoverMainMenu ? FLinearColor(1.0f, 1.0f, 0.3f, 1.0f) : FLinearColor::White, BtnX + 42.0f, BoxY + 208.0f, MedFont, 1.0f, false);
 		AddHitBox(FVector2D(BtnX, BoxY + 196.0f), FVector2D(BtnW, BtnH), TEXT("Btn_MainMenu"), true);
+
+		// Recordatorio de controles en la base del panel de pausa
+		DrawText(TEXT("GUIA: [A/D] Mover | [Espacio] Doble Salto | [Clic Izq] Disparo | [F] Melee | [H] HUD"), FLinearColor(0.72f, 0.82f, 0.92f, 0.85f), BoxX + 16.0f, BoxY + BoxH - 26.0f, MedFont, 0.74f, false);
 	}
 
 	// 4. Pantalla de Victoria (Sobrevivir el minuto)

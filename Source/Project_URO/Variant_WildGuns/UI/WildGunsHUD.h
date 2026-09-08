@@ -31,6 +31,14 @@ public:
 	UFUNCTION(BlueprintPure, Category = "WildGuns HUD")
 	UWildGunsUI* GetUIWidget() const { return UIWidget; }
 
+	/** Si es true, muestra la barra inferior con la guía de controles y botones */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WildGuns HUD")
+	bool bShowControlsGuide = true;
+
+	/** Alterna la visibilidad de la guía de controles */
+	UFUNCTION(BlueprintCallable, Category = "WildGuns HUD")
+	void ToggleControlsGuide() { bShowControlsGuide = !bShowControlsGuide; }
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "WildGuns HUD")
 	TSubclassOf<UWildGunsUI> UIWidgetClass;

@@ -103,6 +103,15 @@ void AWildGunsPlayerController::Tick(float DeltaTime)
 		return;
 	}
 
+	// Alternar visibilidad de la guía de controles con H
+	if (WasInputKeyJustPressed(EKeys::H))
+	{
+		if (AWildGunsHUD* WGHUD = Cast<AWildGunsHUD>(GetHUD()))
+		{
+			WGHUD->ToggleControlsGuide();
+		}
+	}
+
 	// Movimiento lateral (Strafe)
 	float MoveAxis = 0.0f;
 	if (IsInputKeyDown(EKeys::A) || IsInputKeyDown(EKeys::Left))

@@ -22,10 +22,19 @@ public:
 
 	// Limpieza de interfaz en BeginPlay
 	virtual void BeginPlay() override;
+	virtual void DrawHUD() override;
 
 	/** Obtiene la referencia al widget principal de la UI. */
 	UFUNCTION(BlueprintCallable, Category = "TwinStick HUD")
 	UTwinStickUI* GetUIWidget() const { return UIWidget; }
+
+	/** Si es true, muestra la barra inferior con la guía de controles y botones */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TwinStick HUD")
+	bool bShowControlsGuide = true;
+
+	/** Alterna la visibilidad de la guía de controles */
+	UFUNCTION(BlueprintCallable, Category = "TwinStick HUD")
+	void ToggleControlsGuide() { bShowControlsGuide = !bShowControlsGuide; }
 
 protected:
 	/** Clase del widget de UI a instanciar. */
