@@ -73,6 +73,10 @@ public:
 	UFUNCTION()
 	void OnBGMAudioFinished();
 
+	/** Aplica el post-processing de película de Viejo Oeste y asigna texturas temáticas */
+	UFUNCTION(BlueprintCallable, Exec, Category = "WildGuns Aesthetics")
+	void ApplyWesternAesthetics();
+
 protected:
 	// Duración de la partida (60 segundos)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WildGuns Match")

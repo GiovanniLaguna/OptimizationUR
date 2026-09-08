@@ -22,6 +22,13 @@
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SkyLightComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "ImageUtils.h"
+#include "Engine/PostProcessVolume.h"
+#include "Engine/ExponentialHeightFog.h"
+#include "Components/ExponentialHeightFogComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "EngineUtils.h"
+#include "Misc/Paths.h"
 
 AWildGunsGameMode::AWildGunsGameMode()
 {
@@ -135,6 +142,7 @@ void AWildGunsGameMode::BeginPlay()
 
 	SetupGalleryEnvironment();
 	CacheCoversInLevel();
+	ApplyWesternAesthetics();
 
 	// Iniciar oleadas escalonadas mediante temporizadores
 	GetWorldTimerManager().SetTimer(WalkerSpawnTimer, this, &AWildGunsGameMode::SpawnWalkerFromPool, 4.0f, true, 2.0f);
@@ -507,5 +515,182 @@ void AWildGunsGameMode::OnBGMAudioFinished()
 	if (MatchState == EWildGunsMatchState::Playing && BGMAudioComponent)
 	{
 		BGMAudioComponent->Play(0.0f);
+	}
+}
+
+void AWildGunsGameMode::ApplyWesternAesthetics()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	// 1. Configuración de Post-Processing estilo Spaghetti Western (Sergio Leone / Technicolor Cálido)
+	for (TActorIterator<APostProcessVolume> It(World); It; ++It)
+	{
+		APostProcessVolume* PPV = *It;
+		if (PPV)
+		{
+			PPV->bUnbound = true;
+			FPostProcessSettings& S = PPV->Settings;
+
+			// Temperatura cálida y balance de blancos (sol abrasador del desierto)
+			S.bOverride_TemperatureType = true;
+			S.TemperatureType = ETemperatureMethod::TEMP_WhiteBalance;
+			S.bOverride_WhiteTemp = true;
+			S.WhiteTemp = 7100.0f;
+			S.bOverride_WhiteTint = true;
+			S.WhiteTint = 0.12f;
+
+			// Gradación de color auténtica de celuloide clásico
+			S.bOverride_ColorSaturation = true;
+			S.ColorSaturation = FVector4(0.85f, 0.82f, 0.78f, 1.0f);
+
+			S.bOverride_ColorContrast = true;
+			S.ColorContrast = FVector4(1.20f, 1.16f, 1.12f, 1.0f);
+
+			S.bOverride_ColorGamma = true;
+			S.ColorGamma = FVector4(0.98f, 0.97f, 0.94f, 1.0f);
+
+			S.bOverride_ColorGain = true;
+			S.ColorGain = FVector4(1.08f, 1.04f, 0.95f, 1.0f);
+
+			S.bOverride_ColorOffset = true;
+			S.ColorOffset = FVector4(0.015f, 0.010f, 0.003f, 0.0f);
+
+			// Grano de película de 35mm
+			S.bOverride_FilmGrainIntensity = true;
+			S.FilmGrainIntensity = 0.42f;
+
+			// Viñeteado de lente clásico
+			S.bOverride_VignetteIntensity = true;
+			S.VignetteIntensity = 0.52f;
+
+			// Bloom del sol desértico
+			S.bOverride_BloomIntensity = true;
+			S.BloomIntensity = 0.85f;
+		}
+	}
+
+	// 2. Calina y polvo desértico en la niebla atmosférica
+	for (TActorIterator<AExponentialHeightFog> It(World); It; ++It)
+	{
+		if (UExponentialHeightFogComponent* FogComp = It->GetComponent())
+		{
+			FogComp->SetFogDensity(0.012f);
+			FogComp->SetFogInscatteringColor(FLinearColor(0.86f, 0.72f, 0.52f, 1.0f));
+			FogComp->SetDirectionalInscatteringColor(FLinearColor(1.0f, 0.88f, 0.70f, 1.0f));
+		}
+	}
+
+	// 3. Sol cálido del desierto
+	for (TActorIterator<ADirectionalLight> It(World); It; ++It)
+	{
+		if (UDirectionalLightComponent* DLC = Cast<UDirectionalLightComponent>(It->GetLightComponent()))
+		{
+			DLC->SetLightColor(FLinearColor(1.0f, 0.94f, 0.82f));
+		}
+	}
+
+	// 4. Cargar Material Maestro
+	UMaterialInterface* BaseMat = Cast<UMaterialInterface>(StaticLoadObject(UMaterialInterface::StaticClass(), nullptr, TEXT("/Game/Variant_WildGuns/Materials/M_Western_Master")));
+	if (!BaseMat)
+	{
+		BaseMat = Cast<UMaterialInterface>(StaticLoadObject(UMaterialInterface::StaticClass(), nullptr, TEXT("/Game/LevelPrototyping/Materials/M_FlatCol")));
+	}
+
+	if (!BaseMat)
+	{
+		return;
+	}
+
+	const FString TexturesDir = FPaths::ProjectContentDir() / TEXT("WesternTextures");
+
+	auto CreateWesternMID = [&](const FString& FileName, float Tiling, float Roughness) -> UMaterialInstanceDynamic*
+	{
+		const FString FullPath = TexturesDir / FileName;
+		UTexture2D* LoadedTex = FImageUtils::ImportFileAsTexture2D(FullPath);
+		if (!LoadedTex)
+		{
+			return nullptr;
+		}
+
+		UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(BaseMat, this);
+		if (MID)
+		{
+			MID->SetTextureParameterValue(TEXT("BaseTexture"), LoadedTex);
+			MID->SetScalarParameterValue(TEXT("Tiling"), Tiling);
+			MID->SetScalarParameterValue(TEXT("Roughness"), Roughness);
+		}
+		return MID;
+	};
+
+	UMaterialInstanceDynamic* MID_DustyRoad = CreateWesternMID(TEXT("T_Western_DustyRoad.jpg"), 5.0f, 0.9f);
+	UMaterialInstanceDynamic* MID_AgedPlanks = CreateWesternMID(TEXT("T_Western_AgedPlanks.jpg"), 3.0f, 0.8f);
+	UMaterialInstanceDynamic* MID_SaloonWall = CreateWesternMID(TEXT("T_Western_SaloonWall.jpg"), 3.0f, 0.85f);
+	UMaterialInstanceDynamic* MID_SaloonSign = CreateWesternMID(TEXT("T_Western_SaloonSign.jpg"), 1.0f, 0.7f);
+	UMaterialInstanceDynamic* MID_SaloonDoors = CreateWesternMID(TEXT("T_Western_SaloonDoors.jpg"), 1.0f, 0.8f);
+	UMaterialInstanceDynamic* MID_RoofShingles = CreateWesternMID(TEXT("T_Western_RoofShingles.jpg"), 4.0f, 0.85f);
+	UMaterialInstanceDynamic* MID_WhiskeyBarrel = CreateWesternMID(TEXT("T_Western_WhiskeyBarrel.jpg"), 1.0f, 0.75f);
+	UMaterialInstanceDynamic* MID_WoodCrate = CreateWesternMID(TEXT("T_Western_WoodCrate.jpg"), 1.0f, 0.8f);
+
+	// 5. Asignar texturas temáticas a la geometría del escenario en LVL_WildGuns
+	for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
+	{
+		AStaticMeshActor* SMA = *It;
+		if (!SMA) continue;
+
+		UStaticMeshComponent* SMC = SMA->GetStaticMeshComponent();
+		if (!SMC) continue;
+
+		const FString Label = SMA->GetActorLabel();
+
+		if (Label.Contains(TEXT("Street_Floor")))
+		{
+			if (MID_DustyRoad) SMC->SetMaterial(0, MID_DustyRoad);
+		}
+		else if (Label.Contains(TEXT("Boardwalk")) || Label.Contains(TEXT("Post")) || Label.Contains(TEXT("Rail")) || Label.Contains(TEXT("Balcony")))
+		{
+			if (MID_AgedPlanks) SMC->SetMaterial(0, MID_AgedPlanks);
+		}
+		else if (Label.Contains(TEXT("Saloon_Sign")))
+		{
+			if (MID_SaloonSign) SMC->SetMaterial(0, MID_SaloonSign);
+		}
+		else if (Label.Contains(TEXT("Saloon_Doors")))
+		{
+			if (MID_SaloonDoors) SMC->SetMaterial(0, MID_SaloonDoors);
+		}
+		else if (Label.Contains(TEXT("Saloon_Facade")) || Label.Contains(TEXT("Building_Left_Wall")) || Label.Contains(TEXT("Building_Right_Wall")))
+		{
+			if (MID_SaloonWall) SMC->SetMaterial(0, MID_SaloonWall);
+		}
+		else if (Label.Contains(TEXT("Roof")) || Label.Contains(TEXT("Cornice")))
+		{
+			if (MID_RoofShingles) SMC->SetMaterial(0, MID_RoofShingles);
+		}
+		else if (Label.Contains(TEXT("Barrel")))
+		{
+			if (MID_WhiskeyBarrel) SMC->SetMaterial(0, MID_WhiskeyBarrel);
+		}
+		else if (Label.Contains(TEXT("Crate")))
+		{
+			if (MID_WoodCrate) SMC->SetMaterial(0, MID_WoodCrate);
+		}
+	}
+
+	// 6. Asignar material a las coberturas destructibles del jugador
+	for (AWildGunsDestructibleCover* Cover : CachedCovers)
+	{
+		if (Cover && MID_WoodCrate)
+		{
+			TArray<UStaticMeshComponent*> MeshComps;
+			Cover->GetComponents<UStaticMeshComponent>(MeshComps);
+			for (UStaticMeshComponent* Comp : MeshComps)
+			{
+				Comp->SetMaterial(0, MID_WoodCrate);
+			}
+		}
 	}
 }
