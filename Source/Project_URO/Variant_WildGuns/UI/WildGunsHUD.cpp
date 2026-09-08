@@ -124,6 +124,14 @@ void AWildGunsHUD::DrawHUD()
 		DrawRect(FLinearColor(1.0f, 0.2f, 0.2f, 1.0f), ReticlePos.X - 2.0f, ReticlePos.Y - 2.0f, 4.0f, 4.0f);
 	}
 
+	// Obtener posición del ratón para efectos de hover
+	float MouseX = 0.0f, MouseY = 0.0f;
+	if (PC)
+	{
+		PC->GetMousePosition(MouseX, MouseY);
+	}
+	const FVector2D MousePos(MouseX, MouseY);
+
 	// 3. Pantalla de Pausa
 	if (PC && PC->IsGamePaused())
 	{
@@ -146,19 +154,23 @@ void AWildGunsHUD::DrawHUD()
 		const float BtnH = 42.0f;
 		const float BtnX = BoxX + (BoxW - BtnW) * 0.5f;
 
+		const bool bHoverResume = (MousePos.X >= BtnX && MousePos.X <= BtnX + BtnW && MousePos.Y >= BoxY + 80.0f && MousePos.Y <= BoxY + 80.0f + BtnH);
+		const bool bHoverRestart = (MousePos.X >= BtnX && MousePos.X <= BtnX + BtnW && MousePos.Y >= BoxY + 138.0f && MousePos.Y <= BoxY + 138.0f + BtnH);
+		const bool bHoverMainMenu = (MousePos.X >= BtnX && MousePos.X <= BtnX + BtnW && MousePos.Y >= BoxY + 196.0f && MousePos.Y <= BoxY + 196.0f + BtnH);
+
 		// Botón Reanudar
-		DrawRect(FLinearColor(0.12f, 0.38f, 0.16f, 0.95f), BtnX, BoxY + 80.0f, BtnW, BtnH);
-		DrawText(TEXT("[ RESUME ]  (ESC)"), FLinearColor::White, BtnX + 50.0f, BoxY + 92.0f, MedFont, 1.0f, false);
+		DrawRect(bHoverResume ? FLinearColor(0.2f, 0.62f, 0.28f, 1.0f) : FLinearColor(0.12f, 0.38f, 0.16f, 0.95f), BtnX, BoxY + 80.0f, BtnW, BtnH);
+		DrawText(TEXT("[ RESUME ]  (ESC)"), bHoverResume ? FLinearColor(1.0f, 1.0f, 0.3f, 1.0f) : FLinearColor::White, BtnX + 50.0f, BoxY + 92.0f, MedFont, 1.0f, false);
 		AddHitBox(FVector2D(BtnX, BoxY + 80.0f), FVector2D(BtnW, BtnH), TEXT("Btn_Resume"), true);
 
 		// Botón Reiniciar
-		DrawRect(FLinearColor(0.38f, 0.24f, 0.1f, 0.95f), BtnX, BoxY + 138.0f, BtnW, BtnH);
-		DrawText(TEXT("[ RESTART ]  (R)"), FLinearColor::White, BtnX + 52.0f, BoxY + 150.0f, MedFont, 1.0f, false);
+		DrawRect(bHoverRestart ? FLinearColor(0.58f, 0.38f, 0.15f, 1.0f) : FLinearColor(0.38f, 0.24f, 0.1f, 0.95f), BtnX, BoxY + 138.0f, BtnW, BtnH);
+		DrawText(TEXT("[ RESTART ]  (R)"), bHoverRestart ? FLinearColor(1.0f, 1.0f, 0.3f, 1.0f) : FLinearColor::White, BtnX + 52.0f, BoxY + 150.0f, MedFont, 1.0f, false);
 		AddHitBox(FVector2D(BtnX, BoxY + 138.0f), FVector2D(BtnW, BtnH), TEXT("Btn_Restart"), true);
 
 		// Botón Menú Principal
-		DrawRect(FLinearColor(0.38f, 0.14f, 0.14f, 0.95f), BtnX, BoxY + 196.0f, BtnW, BtnH);
-		DrawText(TEXT("[ MAIN MENU ]  (M)"), FLinearColor::White, BtnX + 42.0f, BoxY + 208.0f, MedFont, 1.0f, false);
+		DrawRect(bHoverMainMenu ? FLinearColor(0.58f, 0.22f, 0.22f, 1.0f) : FLinearColor(0.38f, 0.14f, 0.14f, 0.95f), BtnX, BoxY + 196.0f, BtnW, BtnH);
+		DrawText(TEXT("[ MAIN MENU ]  (M)"), bHoverMainMenu ? FLinearColor(1.0f, 1.0f, 0.3f, 1.0f) : FLinearColor::White, BtnX + 42.0f, BoxY + 208.0f, MedFont, 1.0f, false);
 		AddHitBox(FVector2D(BtnX, BoxY + 196.0f), FVector2D(BtnW, BtnH), TEXT("Btn_MainMenu"), true);
 	}
 
@@ -185,12 +197,15 @@ void AWildGunsHUD::DrawHUD()
 		const float BtnH = 45.0f;
 		const float BtnX = BoxX + (BoxW - BtnW) * 0.5f;
 
-		DrawRect(FLinearColor(0.12f, 0.48f, 0.18f, 0.95f), BtnX, BoxY + 140.0f, BtnW, BtnH);
-		DrawText(TEXT("[ PLAY AGAIN ]  (Press R)"), FLinearColor::White, BtnX + 32.0f, BoxY + 153.0f, MedFont, 1.0f, false);
+		const bool bHoverRestart = (MousePos.X >= BtnX && MousePos.X <= BtnX + BtnW && MousePos.Y >= BoxY + 140.0f && MousePos.Y <= BoxY + 140.0f + BtnH);
+		const bool bHoverMainMenu = (MousePos.X >= BtnX && MousePos.X <= BtnX + BtnW && MousePos.Y >= BoxY + 205.0f && MousePos.Y <= BoxY + 205.0f + BtnH);
+
+		DrawRect(bHoverRestart ? FLinearColor(0.2f, 0.7f, 0.28f, 1.0f) : FLinearColor(0.12f, 0.48f, 0.18f, 0.95f), BtnX, BoxY + 140.0f, BtnW, BtnH);
+		DrawText(TEXT("[ PLAY AGAIN ]  (Press R)"), bHoverRestart ? FLinearColor(1.0f, 1.0f, 0.3f, 1.0f) : FLinearColor::White, BtnX + 32.0f, BoxY + 153.0f, MedFont, 1.0f, false);
 		AddHitBox(FVector2D(BtnX, BoxY + 140.0f), FVector2D(BtnW, BtnH), TEXT("Btn_Restart"), true);
 
-		DrawRect(FLinearColor(0.35f, 0.2f, 0.15f, 0.95f), BtnX, BoxY + 205.0f, BtnW, BtnH);
-		DrawText(TEXT("[ MAIN MENU ]  (Press M)"), FLinearColor::White, BtnX + 40.0f, BoxY + 218.0f, MedFont, 1.0f, false);
+		DrawRect(bHoverMainMenu ? FLinearColor(0.55f, 0.32f, 0.22f, 1.0f) : FLinearColor(0.35f, 0.2f, 0.15f, 0.95f), BtnX, BoxY + 205.0f, BtnW, BtnH);
+		DrawText(TEXT("[ MAIN MENU ]  (Press M)"), bHoverMainMenu ? FLinearColor(1.0f, 1.0f, 0.3f, 1.0f) : FLinearColor::White, BtnX + 40.0f, BoxY + 218.0f, MedFont, 1.0f, false);
 		AddHitBox(FVector2D(BtnX, BoxY + 205.0f), FVector2D(BtnW, BtnH), TEXT("Btn_MainMenu"), true);
 	}
 
@@ -217,14 +232,93 @@ void AWildGunsHUD::DrawHUD()
 		const float BtnH = 45.0f;
 		const float BtnX = BoxX + (BoxW - BtnW) * 0.5f;
 
-		DrawRect(FLinearColor(0.48f, 0.12f, 0.12f, 0.95f), BtnX, BoxY + 140.0f, BtnW, BtnH);
-		DrawText(TEXT("[ RETRY STAGE ]  (Press R)"), FLinearColor::White, BtnX + 30.0f, BoxY + 153.0f, MedFont, 1.0f, false);
+		const bool bHoverRestart = (MousePos.X >= BtnX && MousePos.X <= BtnX + BtnW && MousePos.Y >= BoxY + 140.0f && MousePos.Y <= BoxY + 140.0f + BtnH);
+		const bool bHoverMainMenu = (MousePos.X >= BtnX && MousePos.X <= BtnX + BtnW && MousePos.Y >= BoxY + 205.0f && MousePos.Y <= BoxY + 205.0f + BtnH);
+
+		DrawRect(bHoverRestart ? FLinearColor(0.72f, 0.18f, 0.18f, 1.0f) : FLinearColor(0.48f, 0.12f, 0.12f, 0.95f), BtnX, BoxY + 140.0f, BtnW, BtnH);
+		DrawText(TEXT("[ RETRY STAGE ]  (Press R)"), bHoverRestart ? FLinearColor(1.0f, 1.0f, 0.3f, 1.0f) : FLinearColor::White, BtnX + 30.0f, BoxY + 153.0f, MedFont, 1.0f, false);
 		AddHitBox(FVector2D(BtnX, BoxY + 140.0f), FVector2D(BtnW, BtnH), TEXT("Btn_Restart"), true);
 
-		DrawRect(FLinearColor(0.3f, 0.2f, 0.2f, 0.95f), BtnX, BoxY + 205.0f, BtnW, BtnH);
-		DrawText(TEXT("[ MAIN MENU ]  (Press M)"), FLinearColor::White, BtnX + 40.0f, BoxY + 218.0f, MedFont, 1.0f, false);
+		DrawRect(bHoverMainMenu ? FLinearColor(0.5f, 0.32f, 0.32f, 1.0f) : FLinearColor(0.3f, 0.2f, 0.2f, 0.95f), BtnX, BoxY + 205.0f, BtnW, BtnH);
+		DrawText(TEXT("[ MAIN MENU ]  (Press M)"), bHoverMainMenu ? FLinearColor(1.0f, 1.0f, 0.3f, 1.0f) : FLinearColor::White, BtnX + 40.0f, BoxY + 218.0f, MedFont, 1.0f, false);
 		AddHitBox(FVector2D(BtnX, BoxY + 205.0f), FVector2D(BtnW, BtnH), TEXT("Btn_MainMenu"), true);
 	}
+}
+
+bool AWildGunsHUD::HandleScreenClick(FVector2D ClickPos)
+{
+	AWildGunsPlayerController* PC = Cast<AWildGunsPlayerController>(GetOwningPlayerController());
+	if (!PC) return false;
+
+	AWildGunsGameMode* GM = GetWorld()->GetAuthGameMode<AWildGunsGameMode>();
+	const float ScreenW = Canvas ? Canvas->ClipX : 1920.0f;
+	const float ScreenH = Canvas ? Canvas->ClipY : 1080.0f;
+
+	// 1. Caso Pausa
+	if (PC->IsGamePaused())
+	{
+		const float BoxW = 460.0f;
+		const float BoxH = 290.0f;
+		const float BoxX = (ScreenW - BoxW) * 0.5f;
+		const float BoxY = (ScreenH - BoxH) * 0.5f;
+		const float BtnW = 280.0f;
+		const float BtnH = 42.0f;
+		const float BtnX = BoxX + (BoxW - BtnW) * 0.5f;
+
+		// Botón Reanudar
+		if (ClickPos.X >= BtnX && ClickPos.X <= BtnX + BtnW &&
+			ClickPos.Y >= BoxY + 80.0f && ClickPos.Y <= BoxY + 80.0f + BtnH)
+		{
+			PC->TogglePause();
+			return true;
+		}
+
+		// Botón Reiniciar
+		if (ClickPos.X >= BtnX && ClickPos.X <= BtnX + BtnW &&
+			ClickPos.Y >= BoxY + 138.0f && ClickPos.Y <= BoxY + 138.0f + BtnH)
+		{
+			PC->RestartLevelGame();
+			return true;
+		}
+
+		// Botón Menú Principal
+		if (ClickPos.X >= BtnX && ClickPos.X <= BtnX + BtnW &&
+			ClickPos.Y >= BoxY + 196.0f && ClickPos.Y <= BoxY + 196.0f + BtnH)
+		{
+			PC->ReturnToMainMenu();
+			return true;
+		}
+	}
+
+	// 2. Caso Victoria o Game Over
+	if (GM && (GM->GetMatchState() == EWildGunsMatchState::Victory || GM->GetMatchState() == EWildGunsMatchState::GameOver))
+	{
+		const float BoxW = 560.0f;
+		const float BoxH = 320.0f;
+		const float BoxX = (ScreenW - BoxW) * 0.5f;
+		const float BoxY = (ScreenH - BoxH) * 0.5f;
+		const float BtnW = 280.0f;
+		const float BtnH = 45.0f;
+		const float BtnX = BoxX + (BoxW - BtnW) * 0.5f;
+
+		// Botón Retry / Reiniciar
+		if (ClickPos.X >= BtnX && ClickPos.X <= BtnX + BtnW &&
+			ClickPos.Y >= BoxY + 140.0f && ClickPos.Y <= BoxY + 140.0f + BtnH)
+		{
+			PC->RestartLevelGame();
+			return true;
+		}
+
+		// Botón Menú Principal
+		if (ClickPos.X >= BtnX && ClickPos.X <= BtnX + BtnW &&
+			ClickPos.Y >= BoxY + 205.0f && ClickPos.Y <= BoxY + 205.0f + BtnH)
+		{
+			PC->ReturnToMainMenu();
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void AWildGunsHUD::NotifyHitBoxClick(FName BoxName)

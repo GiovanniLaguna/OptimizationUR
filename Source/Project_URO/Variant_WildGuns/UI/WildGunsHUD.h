@@ -24,6 +24,10 @@ public:
 	virtual void DrawHUD() override;
 	virtual void NotifyHitBoxClick(FName BoxName) override;
 
+	/** Procesa clics directos de ratón sobre los botones de Pausa, Victoria o Game Over */
+	UFUNCTION(BlueprintCallable, Category = "WildGuns HUD")
+	bool HandleScreenClick(FVector2D ClickPos);
+
 	UFUNCTION(BlueprintPure, Category = "WildGuns HUD")
 	UWildGunsUI* GetUIWidget() const { return UIWidget; }
 

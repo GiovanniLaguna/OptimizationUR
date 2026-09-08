@@ -15,6 +15,7 @@
 #include "Variant_WildGuns/WildGunsCharacter.h"
 #include "Variant_WildGuns/WildGunsPlayerController.h"
 #include "Components/AudioComponent.h"
+#include "Sound/SoundWave.h"
 #include "Engine/StaticMeshActor.h"
 #include "Engine/DirectionalLight.h"
 #include "Engine/SkyLight.h"
@@ -73,7 +74,14 @@ AWildGunsGameMode::AWildGunsGameMode()
 
 	// Cargar automáticamente pistas de audio y efectos
 	static ConstructorHelpers::FObjectFinder<USoundBase> SndBGM(TEXT("/Game/Variant_WildGuns/Audio/BGM_WildGuns_Theme.BGM_WildGuns_Theme"));
-	if (SndBGM.Succeeded()) BGMTheme = SndBGM.Object;
+	if (SndBGM.Succeeded())
+	{
+		BGMTheme = SndBGM.Object;
+		if (USoundWave* SoundWave = Cast<USoundWave>(BGMTheme))
+		{
+			SoundWave->bLooping = true;
+		}
+	}
 
 	static ConstructorHelpers::FObjectFinder<USoundBase> SndVic(TEXT("/Game/Variant_WildGuns/Audio/SFX_Victory_Fanfare.SFX_Victory_Fanfare"));
 	if (SndVic.Succeeded()) VictorySound = SndVic.Object;
@@ -133,10 +141,21 @@ void AWildGunsGameMode::BeginPlay()
 	GetWorldTimerManager().SetTimer(CoverSpawnTimer, this, &AWildGunsGameMode::SpawnCoverNPCFromPool, 6.0f, true, 4.0f);
 	GetWorldTimerManager().SetTimer(ForegroundSpawnTimer, this, &AWildGunsGameMode::SpawnForegroundNPCFromPool, 7.5f, true, 5.0f);
 
-	// Iniciar reproducción de la música de fondo
+	// Iniciar reproducción de la música de fondo en bucle continuo
 	if (BGMTheme)
 	{
-		BGMAudioComponent = UGameplayStatics::SpawnSound2D(this, BGMTheme, 0.65f, 1.0f, 0.0f, nullptr, true, true);
+		if (USoundWave* SoundWave = Cast<USoundWave>(BGMTheme))
+		{
+			SoundWave->bLooping = true;
+		}
+
+		BGMAudioComponent = UGameplayStatics::SpawnSound2D(this, BGMTheme, 0.65f, 1.0f, 0.0f, nullptr, false, false);
+		if (BGMAudioComponent)
+		{
+			BGMAudioComponent->bAutoDestroy = false;
+			BGMAudioComponent->OnAudioFinished.RemoveDynamic(this, &AWildGunsGameMode::OnBGMAudioFinished);
+			BGMAudioComponent->OnAudioFinished.AddDynamic(this, &AWildGunsGameMode::OnBGMAudioFinished);
+		}
 	}
 }
 
@@ -433,8 +452,13 @@ void AWildGunsGameMode::HandleGameOver()
 			}
 		}
 
-		PC->SetInputMode(FInputModeUIOnly());
+		FInputModeGameAndUI InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		InputMode.SetHideCursorDuringCapture(false);
+		PC->SetInputMode(InputMode);
 		PC->bShowMouseCursor = true;
+		PC->bEnableClickEvents = true;
+		PC->bEnableMouseOverEvents = true;
 	}
 }
 
@@ -468,7 +492,20 @@ void AWildGunsGameMode::HandleVictory()
 			}
 		}
 
-		PC->SetInputMode(FInputModeUIOnly());
+		FInputModeGameAndUI InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		InputMode.SetHideCursorDuringCapture(false);
+		PC->SetInputMode(InputMode);
 		PC->bShowMouseCursor = true;
+		PC->bEnableClickEvents = true;
+		PC->bEnableMouseOverEvents = true;
+	}
+}
+
+void AWildGunsGameMode::OnBGMAudioFinished()
+{
+	if (MatchState == EWildGunsMatchState::Playing && BGMAudioComponent)
+	{
+		BGMAudioComponent->Play(0.0f);
 	}
 }

@@ -152,6 +152,31 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
 	USoundBase* SoundHurt;
 
+	// --- Efectos Cinemáticos de Cámara ---
+	/** Añade trauma de sacudida a la cámara (se acumula hasta 1.0) */
+	UFUNCTION(BlueprintCallable, Category = "WildGuns|Camera")
+	void AddCameraTrauma(float Amount);
+
+	/** Aplica un golpe elástico instantáneo de campo de visión (FOV Punch) */
+	UFUNCTION(BlueprintCallable, Category = "WildGuns|Camera")
+	void AddFOVKick(float FOVDelta);
+
+	/** Dispara efectos visuales de daño (viñeta y aberración cromática) */
+	UFUNCTION(BlueprintCallable, Category = "WildGuns|Camera")
+	void TriggerDamageCameraEffects();
+
+	/** Tasa a la que decae el trauma por segundo */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WildGuns|Camera")
+	float TraumaDecayRate = 1.6f;
+
+	/** FOV base de la cámara de juego */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WildGuns|Camera")
+	float BaseCameraFOV = 90.0f;
+
+	/** Intensidad del movimiento de paralaje al apuntar con la retícula */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WildGuns|Camera")
+	float AimParallaxIntensity = 1.0f;
+
 protected:
 	EWildGunsWeapon CurrentWeapon = EWildGunsWeapon::MachineGun;
 	int32 ShotgunAmmo = 0;
@@ -159,6 +184,17 @@ protected:
 	FTimerHandle InvulnerabilityTimerHandle;
 	FTimerHandle ShootLoopTimer;
 
+	// Variables internas del sistema de cámara dinámica
+	float CameraTrauma = 0.0f;
+	float CurrentCameraFOV = 90.0f;
+	float DamageVignetteAmount = 0.0f;
+	float ChromaticAberrationAmount = 0.0f;
+	float ShakeTimeCounter = 0.0f;
+
+	FVector BaseSocketOffset = FVector(0.0f, 0.0f, 60.0f);
+	FRotator BaseBoomRotation = FRotator(-6.0f, 0.0f, 0.0f);
+
+	void UpdateCameraEffects(float DeltaTime);
 	void ExecuteShot();
 	void EndInvulnerability();
 	FVector GetAimTargetLocation() const;

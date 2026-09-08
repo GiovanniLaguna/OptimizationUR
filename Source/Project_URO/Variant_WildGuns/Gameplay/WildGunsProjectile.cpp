@@ -8,6 +8,7 @@
 #include "Pooling/ActorPool.h"
 #include "Pooling/ActorUtilities.h"
 #include "Pooling/PooledDecalActor.h"
+#include "Variant_WildGuns/WildGunsCharacter.h"
 
 AWildGunsProjectile::AWildGunsProjectile()
 {
@@ -139,6 +140,17 @@ void AWildGunsProjectile::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, 
 		if (SoundExplosion)
 		{
 			UGameplayStatics::PlaySoundAtLocation(this, SoundExplosion, HitLocation);
+		}
+
+		// Sacudida cinemática de cámara por onda expansiva
+		if (APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0))
+		{
+			if (AWildGunsCharacter* WGChar = Cast<AWildGunsCharacter>(PlayerPawn))
+			{
+				const float Dist = FVector::Dist(PlayerPawn->GetActorLocation(), HitLocation);
+				const float ShockwaveTrauma = FMath::Clamp(1.0f - (Dist / 3000.0f), 0.15f, 0.45f);
+				WGChar->AddCameraTrauma(ShockwaveTrauma);
+			}
 		}
 
 		BP_OnExploded(HitLocation, true);

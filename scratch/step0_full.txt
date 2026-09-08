@@ -1,0 +1,52 @@
+<USER_REQUEST>
+Mecánicas
+Se creará una réplica del primer nivel del juego [Wild Guns](https://drive.google.com/file/d/1CTtShqRfOgsJCY1ovgM53IaL7wbn68gE/view?usp=sharing), un third person shooter en el cual un cronómetro corre por un minuto en el cual aparecen enemigos que intentan derrotar al jugador, el objetivo del juego es sobrevivir por dicho minuto.
+Personaje Jugable: El personaje que el jugador controla debe tener las siguientes características:
+Strafe: El jugador solamente puede correr a la izquierda o derecha.
+Salto: El jugador tiene dos saltos principalmente para evadir ataques enemigos.
+Disparo: El jugador tiene un arma default: una metralleta de balas infinitas que no necesita recarga, solamente puede dispararse si el jugador está en el piso (no saltando) y mientras se dispara, no se puede mover. Además de dañar a los enemigos y algunos props es también cómo se recolectan powerups.
+Ataque cuerpo a cuerpo: Se usa para derrotar a los enemigos Frontground.
+Hp y vidas: El jugador solamente tiene un hp y tres vidas, si se acaban estas últimas se pierde el juego.
+Enemigos: Son los NPC que aparecen mientras el cronómetro está activo e intentan derrotar al jugador, son de dos tipos:
+Enemigo Background: Son enemigos que aparecen en el fondo del nivel y atacan al jugador con armas de fuego, sólo pueden ser derrotados por disparos del jugador. Hay dos variaciones
+Walker: Enemigo que se mueve lateralmente, camina a la derecha o izquierda por unos instantes, dispara hacia el jugador y vuelve a caminar, saliendo de la pantalla.
+Cover: Enemigo que aparece detrás de props del nivel, toma cobertura tras ellos por instances, para proceder a asomarse y disparar al jugador.
+Enemigo Foreground: Son enemigos que aparecen a la misma “altura” del jugador, se mueven a la misma dirección a la que se mueve este e intentan golpearlo, son inmunes a los disparos, solamente pueden derrotarse con un ataque cuerpo a cuerpo.
+Props: Son Actores del nivel que tienen un grado de interacción con el jugador:
+Powerup Escopeta: los enemigos Background tienen una probabilidad de tirar este power up al morir, al recolectarlo (se le dispara) reemplaza el arma principal por una escopeta con las siguientes características:
+Munición limitada: tiene 50 tiros, se consume uno por disparo, al acabarse se revierte al arma default.
+Cadencia lenta: a diferencia del arma default tiene una cadencia un poco más lenta de disparo.
+Area of Effect: cuando impacta el proyectil de la bala con un actor o enemigo esta crea una pequeña explosión alrededor que infringe el mismo daño que el proyectil.
+Cobertura destruible: Son actores del nivel que los enemigos usan de cobertura pero pueden ser destruidos por disparos del jugador.
+2.2 Rubros de desarrollo
+Sistema de pooling para proyectiles y enemigos:
+Debe haber por lo menos un arma en el juego que funcione a base de proyectiles.
+Todos los proyectiles y enemigos del juego deben hacer spawn en la escena mediante un sistema de pooling, no pueden ser instanciados fuera de ese sistema.
+Geometría estática y LOD:
+En los niveles del juego, todos los elementos no interactivos (pisos, paredes, decoraciones, etc.) deberán ser objetos estáticos, es decir que no tengan interacción física.
+Los personajes y/o objetos con alto nivel de poligonaje deberán implementar LODS (Level of Detail).
+Iluminación:
+No puede haber iluminación en realtime, debe ser completamente precalculada o combinada.
+No se pueden usar materiales unlit, los elementos del juego deben reaccionar a la luz.
+Flujo de Juego: El juego debe incluir las siguientes pantallas
+Pantalla de inicio/Menú Principal: Debe tener la opción de iniciar el juego o salir de este.
+Pantalla de juego: La escena del juego en sí, está a su vez contiene:
+Pantalla de pausa: Menú de pausa dentro del juego, debe tener la opción para continuar el juego o salir de este (regresar a la pantalla inicial).
+Pantalla de Game Over: Se activa si el jugador es derrotado, notifica al este de su derrota y debe regresar a la pantalla inicial.
+Pantalla de Victoria: Se activa al completar el nivel (alcanzar el final de este) Felicita al jugador y se debe poder regresar a la pantalla inicial.
+Presentación:
+HUD/UI: El juego debe tener un Hud que refleje los siguientes aspectos del juego:
+Barra de vida - Jugador: Debe reflejar cuántas vidas le quedan al jugador.
+Estatus Arma: Se debe reflejar que arma se tiene equipada con un contador de munición.
+Gamefeel:
+El juego debe tener música y efectos de sonido.
+El juego debe tener efectos de transición de pantalla entre cambio de escenas.
+El juego debe incorporar decals para al menos marcar los impactos de los disparos en los actores del juego.
+Para la entrega final, no pude haber assets en calidad placeholder.
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-09-06T19:02:53-06:00.
+</ADDITIONAL_METADATA>
+<USER_SETTINGS_CHANGE>
+The user changed setting `Model Selection` from None to Gemini 3.8 Flash (High). No need to comment on this change if the user doesn't ask about it. If reporting what model you are, please use a human readable name instead of the exact string.
+</USER_SETTINGS_CHANGE>

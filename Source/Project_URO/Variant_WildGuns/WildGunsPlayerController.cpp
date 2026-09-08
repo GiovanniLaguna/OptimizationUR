@@ -15,6 +15,8 @@ AWildGunsPlayerController::AWildGunsPlayerController()
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bTickEvenWhenPaused = true;
 	bShowMouseCursor = true;
+	bEnableClickEvents = true;
+	bEnableMouseOverEvents = true;
 	DefaultMouseCursor = EMouseCursor::Crosshairs;
 }
 
@@ -80,7 +82,17 @@ void AWildGunsPlayerController::Tick(float DeltaTime)
 
 	if (bIsGamePaused || bIsGameOverOrVictory)
 	{
-		if (WasInputKeyJustPressed(EKeys::R))
+		// 1. Clic directo con ratón sobre los botones dibujados en pantalla
+		if (WasInputKeyJustPressed(EKeys::LeftMouseButton))
+		{
+			if (AWildGunsHUD* WGHUD = Cast<AWildGunsHUD>(GetHUD()))
+			{
+				WGHUD->HandleScreenClick(FVector2D(MouseX, MouseY));
+			}
+		}
+
+		// 2. Atajos de teclado (R / Enter / Espacio para reintentar; M para Menú Principal)
+		if (WasInputKeyJustPressed(EKeys::R) || WasInputKeyJustPressed(EKeys::Enter) || WasInputKeyJustPressed(EKeys::SpaceBar))
 		{
 			RestartLevelGame();
 		}
@@ -251,11 +263,18 @@ void AWildGunsPlayerController::TogglePause()
 
 	if (bIsGamePaused)
 	{
-		SetInputMode(FInputModeGameAndUI());
+		FInputModeGameAndUI InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		InputMode.SetHideCursorDuringCapture(false);
+		SetInputMode(InputMode);
+		bShowMouseCursor = true;
+		bEnableClickEvents = true;
+		bEnableMouseOverEvents = true;
 	}
 	else
 	{
 		SetInputMode(FInputModeGameOnly());
+		bShowMouseCursor = true;
 	}
 }
 
@@ -315,23 +334,40 @@ FVector AWildGunsPlayerController::GetReticleWorldLocation() const
 
 void AWildGunsPlayerController::RestartLevelGame()
 {
-	PlayCameraFade(true, 0.5f);
-
-	FTimerHandle RestartTimer;
-	GetWorldTimerManager().SetTimer(RestartTimer, [this]()
+	// Despausar inmediatamente si el juego estaba pausado
+	if (bIsGamePaused)
 	{
-		FString CurrentMapName = UGameplayStatics::GetCurrentLevelName(this);
-		UGameplayStatics::OpenLevel(this, FName(*CurrentMapName));
-	}, 0.5f, false);
+		SetPause(false);
+		bIsGamePaused = false;
+	}
+
+	SetInputMode(FInputModeGameOnly());
+
+	FString CurrentMapName = UGameplayStatics::GetCurrentLevelName(this);
+	if (CurrentMapName.IsEmpty() || CurrentMapName.Contains(TEXT("Menu"), ESearchCase::IgnoreCase))
+	{
+		CurrentMapName = TEXT("LVL_WildGuns");
+	}
+
+	UGameplayStatics::OpenLevel(this, FName(*CurrentMapName));
 }
 
 void AWildGunsPlayerController::ReturnToMainMenu()
 {
-	PlayCameraFade(true, 0.5f);
-
-	FTimerHandle MenuTimer;
-	GetWorldTimerManager().SetTimer(MenuTimer, [this]()
+	// Despausar inmediatamente si el juego estaba pausado
+	if (bIsGamePaused)
 	{
-		UGameplayStatics::OpenLevel(this, FName(TEXT("LVL_WildGuns_MainMenu")));
-	}, 0.5f, false);
+		SetPause(false);
+		bIsGamePaused = false;
+	}
+
+	FInputModeGameAndUI MenuMode;
+	MenuMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	MenuMode.SetHideCursorDuringCapture(false);
+	SetInputMode(MenuMode);
+	bShowMouseCursor = true;
+	bEnableClickEvents = true;
+	bEnableMouseOverEvents = true;
+
+	UGameplayStatics::OpenLevel(this, FName(TEXT("LVL_WildGuns_MainMenu")));
 }

@@ -69,6 +69,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "WildGuns Flow")
 	EWildGunsMatchState GetMatchState() const { return MatchState; }
 
+	/** Callback para reiniciar la música en bucle cuando termina la pista */
+	UFUNCTION()
+	void OnBGMAudioFinished();
+
 protected:
 	// Duración de la partida (60 segundos)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WildGuns Match")
