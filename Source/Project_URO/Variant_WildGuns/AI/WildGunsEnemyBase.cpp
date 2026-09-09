@@ -2,6 +2,7 @@
 
 #include "WildGunsEnemyBase.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Pooling/ActorPool.h"
@@ -25,23 +26,13 @@ AWildGunsEnemyBase::AWildGunsEnemyBase()
 		GetCharacterMovement()->bRunPhysicsWithNoController = true;
 	}
 
-	// 1. Malla 3D temática de Wild Guns (si está disponible, o fallback a Maniquí)
-	static ConstructorHelpers::FObjectFinder<USkeletalMesh> WildGunsMeshFinder(TEXT("/Game/Characters/Player/SKM_Meshy_AI_Wild_Guns_Idle_Pose_C_0804014729_texture.SKM_Meshy_AI_Wild_Guns_Idle_Pose_C_0804014729_texture"));
-	if (WildGunsMeshFinder.Succeeded() && GetMesh())
+	// 1. Malla 3D del Maniquí con jerarquía esquelética completa para locomoción
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> MannyFinder(TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"));
+	if (MannyFinder.Succeeded() && GetMesh())
 	{
-		GetMesh()->SetSkeletalMesh(WildGunsMeshFinder.Object);
+		GetMesh()->SetSkeletalMesh(MannyFinder.Object);
 		GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
 		GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
-	}
-	else
-	{
-		static ConstructorHelpers::FObjectFinder<USkeletalMesh> MannyFinder(TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"));
-		if (MannyFinder.Succeeded() && GetMesh())
-		{
-			GetMesh()->SetSkeletalMesh(MannyFinder.Object);
-			GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
-			GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
-		}
 	}
 
 	if (GetMesh())
@@ -69,6 +60,36 @@ AWildGunsEnemyBase::AWildGunsEnemyBase()
 
 	static ConstructorHelpers::FObjectFinder<USoundBase> SndDeathFinder(TEXT("/Game/Variant_WildGuns/Audio/SFX_Explosion_AoE.SFX_Explosion_AoE"));
 	if (SndDeathFinder.Succeeded()) SoundDeath = SndDeathFinder.Object;
+}
+
+void AWildGunsEnemyBase::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// Asegurar en tiempo de ejecución que el enemigo tiene la malla y el Blueprint de animación de locomoción
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		USkeletalMesh* CurrentMesh = MeshComp->GetSkeletalMeshAsset();
+		if (!CurrentMesh || CurrentMesh->GetName().Contains(TEXT("Meshy")))
+		{
+			USkeletalMesh* MannyMesh = LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"));
+			if (MannyMesh)
+			{
+				MeshComp->SetSkeletalMeshAsset(MannyMesh);
+				MeshComp->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
+				MeshComp->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+			}
+		}
+
+		if (!MeshComp->GetAnimClass())
+		{
+			UClass* AnimClass = LoadClass<UAnimInstance>(nullptr, TEXT("/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed.ABP_Unarmed_C"));
+			if (AnimClass)
+			{
+				MeshComp->SetAnimInstanceClass(AnimClass);
+			}
+		}
+	}
 }
 
 void AWildGunsEnemyBase::OnActivatedFromPool_Implementation()

@@ -5,6 +5,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Pooling/ActorPool.h"
 #include "Pooling/PooledDecalActor.h"
@@ -56,13 +57,19 @@ AWildGunsCharacter::AWildGunsCharacter()
 	FollowCamera->PostProcessSettings.bOverride_SceneFringeIntensity = true;
 	FollowCamera->PostProcessSettings.SceneFringeIntensity = 0.0f;
 
-	// Cargar automáticamente el modelo 3D de Wild Guns para el jugador
-	static ConstructorHelpers::FObjectFinder<USkeletalMesh> WGMeshFinder(TEXT("/Game/Characters/Player/SKM_Meshy_AI_Wild_Guns_Idle_Pose_C_0804014729_texture.SKM_Meshy_AI_Wild_Guns_Idle_Pose_C_0804014729_texture"));
-	if (WGMeshFinder.Succeeded() && GetMesh())
+	// Cargar automáticamente el modelo 3D y Animation Blueprint con locomoción completa
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> PlayerMeshFinder(TEXT("/Game/Characters/Mannequins/Meshes/SKM_Quinn_Simple.SKM_Quinn_Simple"));
+	if (PlayerMeshFinder.Succeeded() && GetMesh())
 	{
-		GetMesh()->SetSkeletalMesh(WGMeshFinder.Object);
+		GetMesh()->SetSkeletalMesh(PlayerMeshFinder.Object);
 		GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
 		GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+	}
+
+	static ConstructorHelpers::FClassFinder<UAnimInstance> PlayerAnimFinder(TEXT("/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed.ABP_Unarmed_C"));
+	if (PlayerAnimFinder.Succeeded() && GetMesh())
+	{
+		GetMesh()->SetAnimInstanceClass(PlayerAnimFinder.Class);
 	}
 
 	// Cargar automáticamente efectos de sonido
@@ -85,6 +92,31 @@ AWildGunsCharacter::AWildGunsCharacter()
 void AWildGunsCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Asegurar en tiempo de ejecución que el personaje tiene la malla con locomoción compatible
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		USkeletalMesh* CurrentMesh = MeshComp->GetSkeletalMeshAsset();
+		if (!CurrentMesh || CurrentMesh->GetName().Contains(TEXT("Meshy")))
+		{
+			USkeletalMesh* QuinnMesh = LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/Characters/Mannequins/Meshes/SKM_Quinn_Simple.SKM_Quinn_Simple"));
+			if (QuinnMesh)
+			{
+				MeshComp->SetSkeletalMeshAsset(QuinnMesh);
+				MeshComp->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
+				MeshComp->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+			}
+		}
+
+		if (!MeshComp->GetAnimClass())
+		{
+			UClass* AnimClass = LoadClass<UAnimInstance>(nullptr, TEXT("/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed.ABP_Unarmed_C"));
+			if (AnimClass)
+			{
+				MeshComp->SetAnimInstanceClass(AnimClass);
+			}
+		}
+	}
 
 	Lives = 3;
 	CurrentHP = 1.0f;
@@ -241,6 +273,8 @@ void AWildGunsCharacter::ExecuteShot()
 			if (AWildGunsProjectile* Projectile = Cast<AWildGunsProjectile>(PooledActor))
 			{
 				Projectile->OwningPool = WGGM->GetShotgunProjectilePool();
+				Projectile->SetInstigator(this);
+				Projectile->SetOwner(this);
 				Projectile->bIsEnemyProjectile = false;
 				Projectile->bIsExplosiveShotgun = true;
 				Projectile->ExplosionRadius = 260.0f;
@@ -275,48 +309,21 @@ void AWildGunsCharacter::ExecuteShot()
 	}
 	else
 	{
-		// Metralleta Default: Balas infinitas, disparo de alta cadencia con registro de impacto arcade
+		// Metralleta Default: Balas infinitas disparadas como proyectiles desde el Pool
 		AddCameraTrauma(0.06f);
 
-		FHitResult HitResult;
-		FCollisionQueryParams QueryParams;
-		QueryParams.AddIgnoredActor(this);
-
-		const FVector TraceEnd = MuzzleLoc + (ShotDir * 6000.0f);
-		FCollisionShape BulletSphere = FCollisionShape::MakeSphere(25.0f);
-
-		// 1. Barrido con radio de 25cm por Visibility
-		bool bHit = GetWorld()->SweepSingleByChannel(HitResult, MuzzleLoc, TraceEnd, FQuat::Identity, ECC_Visibility, BulletSphere, QueryParams);
-		if (!bHit)
+		if (WGGM && WGGM->GetPlayerProjectilePool())
 		{
-			// 2. Línea directa por Visibility
-			bHit = GetWorld()->LineTraceSingleByChannel(HitResult, MuzzleLoc, TraceEnd, ECC_Visibility, QueryParams);
-		}
-		if (!bHit)
-		{
-			// 3. Respaldo por Pawn para máxima fiabilidad
-			bHit = GetWorld()->SweepSingleByChannel(HitResult, MuzzleLoc, TraceEnd, FQuat::Identity, ECC_Pawn, BulletSphere, QueryParams);
-		}
-
-		if (bHit && HitResult.GetActor())
-		{
-			// Infligir daño a actores, enemigos, coberturas y powerups
-			UGameplayStatics::ApplyPointDamage(
-				HitResult.GetActor(),
-				1.0f,
-				ShotDir,
-				HitResult,
-				GetController(),
-				this,
-				UDamageType::StaticClass()
-			);
-
-			// Decal de impacto mediante el pool de decals
-			if (WGGM && WGGM->GetDecalPool())
+			AActor* PooledActor = WGGM->GetPlayerProjectilePool()->GetActorFromPool(MuzzleLoc, ShotDir.Rotation());
+			if (AWildGunsProjectile* Projectile = Cast<AWildGunsProjectile>(PooledActor))
 			{
-				FRotator DecalRot = HitResult.ImpactNormal.Rotation();
-				DecalRot.Pitch += 180.0f;
-				WGGM->GetDecalPool()->GetActorFromPool(HitResult.ImpactPoint, DecalRot);
+				Projectile->OwningPool = WGGM->GetPlayerProjectilePool();
+				Projectile->SetInstigator(this);
+				Projectile->SetOwner(this);
+				Projectile->bIsEnemyProjectile = false;
+				Projectile->bIsExplosiveShotgun = false;
+				Projectile->Damage = 1.0f;
+				Projectile->SetVelocity(ShotDir, 8000.0f);
 			}
 		}
 
@@ -325,7 +332,7 @@ void AWildGunsCharacter::ExecuteShot()
 			UGameplayStatics::PlaySound2D(this, SoundGunshotMG);
 		}
 
-		BP_OnShotFired(EWildGunsWeapon::MachineGun, MuzzleLoc, bHit ? HitResult.ImpactPoint : TraceEnd);
+		BP_OnShotFired(EWildGunsWeapon::MachineGun, MuzzleLoc, TargetLoc);
 	}
 }
 

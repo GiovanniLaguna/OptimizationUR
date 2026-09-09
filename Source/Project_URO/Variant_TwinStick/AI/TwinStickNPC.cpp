@@ -48,13 +48,37 @@ void ATwinStickNPC::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// Garantizar en tiempo de ejecución malla compatible y Blueprint de animación con locomoción
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		USkeletalMesh* CurrentMesh = MeshComp->GetSkeletalMeshAsset();
+		if (!CurrentMesh || CurrentMesh->GetName().Contains(TEXT("Meshy")))
+		{
+			USkeletalMesh* MannyMesh = LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"));
+			if (MannyMesh)
+			{
+				MeshComp->SetSkeletalMeshAsset(MannyMesh);
+				MeshComp->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
+				MeshComp->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+			}
+		}
+
+		if (!MeshComp->GetAnimClass())
+		{
+			UClass* AnimClass = LoadClass<UAnimInstance>(nullptr, TEXT("/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed.ABP_Unarmed_C"));
+			if (AnimClass)
+			{
+				MeshComp->SetAnimInstanceClass(AnimClass);
+			}
+		}
+	}
+
 	// Mark active and increment counter
 	bActiveInWorld = true;
 	if (ATwinStickGameMode* GM = Cast<ATwinStickGameMode>(GetWorld()->GetAuthGameMode()))
 	{
 		GM->IncreaseNPCs();
 	}
-
 }
 
 void ATwinStickNPC::EndPlay(EEndPlayReason::Type EndPlayReason)

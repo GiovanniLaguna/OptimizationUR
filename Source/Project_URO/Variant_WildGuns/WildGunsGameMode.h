@@ -39,6 +39,9 @@ public:
 	UActorPool* GetEnemyProjectilePool() const { return EnemyProjectilePool; }
 
 	UFUNCTION(BlueprintPure, Category = "Pooling")
+	UActorPool* GetPlayerProjectilePool() const { return PlayerProjectilePool; }
+
+	UFUNCTION(BlueprintPure, Category = "Pooling")
 	UActorPool* GetShotgunProjectilePool() const { return ShotgunProjectilePool; }
 
 	UFUNCTION(BlueprintPure, Category = "Pooling")
@@ -93,6 +96,9 @@ protected:
 	TSubclassOf<AActor> EnemyProjectileClass;
 
 	UPROPERTY(EditAnywhere, Category = "Pooling|Classes")
+	TSubclassOf<AActor> PlayerProjectileClass;
+
+	UPROPERTY(EditAnywhere, Category = "Pooling|Classes")
 	TSubclassOf<AActor> ShotgunProjectileClass;
 
 	UPROPERTY(EditAnywhere, Category = "Pooling|Classes")
@@ -113,6 +119,9 @@ protected:
 	// Componentes de Pool
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pooling|Pools")
 	UActorPool* EnemyProjectilePool;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pooling|Pools")
+	UActorPool* PlayerProjectilePool;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pooling|Pools")
 	UActorPool* ShotgunProjectilePool;

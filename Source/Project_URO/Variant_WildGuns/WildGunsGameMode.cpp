@@ -42,6 +42,9 @@ AWildGunsGameMode::AWildGunsGameMode()
 	EnemyProjectilePool = CreateDefaultSubobject<UActorPool>(TEXT("EnemyProjectilePool"));
 	EnemyProjectilePool->defaultSize = 25;
 
+	PlayerProjectilePool = CreateDefaultSubobject<UActorPool>(TEXT("PlayerProjectilePool"));
+	PlayerProjectilePool->defaultSize = 40;
+
 	ShotgunProjectilePool = CreateDefaultSubobject<UActorPool>(TEXT("ShotgunProjectilePool"));
 	ShotgunProjectilePool->defaultSize = 15;
 
@@ -62,6 +65,7 @@ AWildGunsGameMode::AWildGunsGameMode()
 
 	// Clases base predeterminadas en C++
 	EnemyProjectileClass = AWildGunsProjectile::StaticClass();
+	PlayerProjectileClass = AWildGunsProjectile::StaticClass();
 	ShotgunProjectileClass = AWildGunsProjectile::StaticClass();
 	WalkerNPCClass = AWildGunsWalkerNPC::StaticClass();
 	CoverNPCClass = AWildGunsCoverNPC::StaticClass();
@@ -103,6 +107,10 @@ void AWildGunsGameMode::BeginPlay()
 	if (!EnemyProjectilePool->actorTemplate && EnemyProjectileClass)
 	{
 		EnemyProjectilePool->actorTemplate = EnemyProjectileClass;
+	}
+	if (!PlayerProjectilePool->actorTemplate && PlayerProjectileClass)
+	{
+		PlayerProjectilePool->actorTemplate = PlayerProjectileClass;
 	}
 	if (!ShotgunProjectilePool->actorTemplate && ShotgunProjectileClass)
 	{

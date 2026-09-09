@@ -16,6 +16,12 @@ AWildGunsCoverNPC::AWildGunsCoverNPC()
 		GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -90.0f));
 		GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
 	}
+
+	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimFinder(TEXT("/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed.ABP_Unarmed_C"));
+	if (AnimFinder.Succeeded() && GetMesh())
+	{
+		GetMesh()->SetAnimInstanceClass(AnimFinder.Class);
+	}
 }
 
 void AWildGunsCoverNPC::OnActivatedFromPool_Implementation()

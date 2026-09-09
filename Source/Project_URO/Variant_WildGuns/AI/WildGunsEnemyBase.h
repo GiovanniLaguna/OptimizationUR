@@ -21,6 +21,7 @@ class PROJECT_URO_API AWildGunsEnemyBase : public ACharacter, public IPoolableAc
 public:
 	AWildGunsEnemyBase();
 
+	virtual void BeginPlay() override;
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
 	/** Salud máxima del enemigo */

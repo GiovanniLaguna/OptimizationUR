@@ -8,7 +8,9 @@
 #include "Pooling/ActorPool.h"
 #include "Pooling/ActorUtilities.h"
 #include "Pooling/PooledDecalActor.h"
+#include "Variant_WildGuns/AI/WildGunsEnemyBase.h"
 #include "Variant_WildGuns/WildGunsCharacter.h"
+#include "Variant_WildGuns/WildGunsGameMode.h"
 
 AWildGunsProjectile::AWildGunsProjectile()
 {
@@ -16,9 +18,10 @@ AWildGunsProjectile::AWildGunsProjectile()
 
 	CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionSphere"));
 	CollisionSphere->InitSphereRadius(18.0f);
-	CollisionSphere->SetCollisionProfileName(TEXT("Projectile"));
-	CollisionSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
-	CollisionSphere->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	CollisionSphere->SetCollisionProfileName(TEXT("Custom"));
+	CollisionSphere->SetCollisionObjectType(ECC_WorldDynamic);
+	CollisionSphere->SetCollisionResponseToAllChannels(ECR_Block);
+	CollisionSphere->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	CollisionSphere->SetNotifyRigidBodyCollision(true);
 	RootComponent = CollisionSphere;
 
@@ -119,6 +122,35 @@ void AWildGunsProjectile::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, 
 		return;
 	}
 
+	// Si es proyectil del jugador, ignorar al propio jugador o a su Owner/Instigator
+	if (!bIsEnemyProjectile && (Other->IsA(AWildGunsCharacter::StaticClass()) || Other == GetOwner() || Other == GetInstigator()))
+	{
+		return;
+	}
+
+	// Si es proyectil enemigo, ignorar a otros enemigos o a su Owner/Instigator
+	if (bIsEnemyProjectile && (Other->IsA(AWildGunsEnemyBase::StaticClass()) || Other == GetOwner() || Other == GetInstigator()))
+	{
+		return;
+	}
+
+	// Colisión entre dos proyectiles
+	if (AWildGunsProjectile* OtherProj = Cast<AWildGunsProjectile>(Other))
+	{
+		// Si ambos proyectiles pertenecen al mismo bando, no colisionan entre sí
+		if (OtherProj->bIsEnemyProjectile == this->bIsEnemyProjectile)
+		{
+			return;
+		}
+
+		// Interceptación clásica de Wild Guns: bala del jugador destruye bala enemiga
+		bImpactProcessed = true;
+		BP_OnExploded(HitLocation, false);
+		ReturnToPool();
+		OtherProj->ReturnToPool();
+		return;
+	}
+
 	bImpactProcessed = true;
 
 	if (bIsExplosiveShotgun)
@@ -132,7 +164,7 @@ void AWildGunsProjectile::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, 
 			UDamageType::StaticClass(),
 			TArray<AActor*>(),
 			this,
-			nullptr,
+			GetInstigatorController(),
 			false,
 			ECC_Visibility
 		);
@@ -163,10 +195,22 @@ void AWildGunsProjectile::NotifyHit(UPrimitiveComponent* MyComp, AActor* Other, 
 			Damage,
 			GetVelocity().GetSafeNormal(),
 			Hit,
-			nullptr,
+			GetInstigatorController(),
 			this,
 			UDamageType::StaticClass()
 		);
+
+		// Estampar calcomanía en la superficie si el GameMode dispone de DecalPool
+		AGameModeBase* GM = UGameplayStatics::GetGameMode(this);
+		if (AWildGunsGameMode* WGGM = Cast<AWildGunsGameMode>(GM))
+		{
+			if (WGGM->GetDecalPool())
+			{
+				FRotator DecalRot = HitNormal.Rotation();
+				DecalRot.Pitch += 180.0f;
+				WGGM->GetDecalPool()->GetActorFromPool(HitLocation, DecalRot);
+			}
+		}
 
 		BP_OnExploded(HitLocation, false);
 	}
